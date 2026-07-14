@@ -1507,28 +1507,25 @@
 
     // Функция загрузки данных из Firebase при запуске
     function loadDataFromFirebase() {
-        database.ref('users/user_1/state')
-        .set(state)
-        .then(() => console.log("УСПЕШНО СОХРАНЕНО"))
-        .catch(err => console.error("ОШИБКА СОХРАНЕНИЯ", err))
-            .then((snapshot) => {
-                const cloudData = snapshot.val();
-                if (cloudData) {
-                    // Переписываем локальный state данными из облака
-                    Object.assign(state, cloudData);
-                    console.log("Данные успешно синхронизированы из Firebase!");
-                } else {
-                    console.log("Облако пустое. Будут использованы локальные дефолтные данные.");
-                }
-                // Запускаем отрисовку приложения после того, как данные точно загрузились
-                renderApp();
-            })
-            .catch((error) => {
-                console.error("Ошибка чтения из Firebase, загружаем локально:", error);
-                // Если база недоступна — рендерим то, что есть локально
-                renderApp();
-            });
-    }
+    database.ref("users/user_1/state")
+        .once("value")
+        .then((snapshot) => {
+            const cloudData = snapshot.val();
+
+            if (cloudData) {
+                Object.assign(state, cloudData);
+                console.log("Данные успешно загружены из Firebase!");
+            } else {
+                console.log("Облако пустое.");
+            }
+
+            renderApp();
+        })
+        .catch((error) => {
+            console.error("Ошибка чтения:", error);
+            renderApp();
+        });
+}
 
     // Запускаем процесс загрузки данных
     loadDataFromFirebase();
