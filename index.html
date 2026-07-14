@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sheeesh, yes</title>
+    <!-- Внешние библиотеки -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16"></script>
+
+    <!-- Стили CSS -->
+    <style>
+        :root {
+            --primary: #0b57d0;
+            --on-primary: #fff;
+            --surface: #fff;
+            --surface-container: #f0f4f9;
+            --surface-container-high: #e9ebf0;
+            --on-surface-default: #1b1c1d;
+            --on-surface-de-emphasis: #444746;
+            --outline-variant: #c4c7c5;
+            --error: #b3261e;
+            --success: #146c2e;
+            --warning: #f9ab00;
+            --accent-purple: #681da8;
+            --accent-blue: #00639b;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #a8c7fa;
+                --on-primary: #062e6f;
+                --surface: #101218;
+                --surface-container: #1b1c22;
+                --surface-container-high: #2a2b36;
+                --on-surface-default: #fff;
+                --on-surface-de-emphasis: #c4c7c5;
+                --outline-variant: #4a5050;
+                --error: #f2b8b5;
+                --success: #6dd58c;
+                --warning: #fcbd00;
+                --accent-purple: #c598ff;
+                --accent-blue: #7fcfff;
+            }
+        }
+
+        body {
+            font-family: "Google Sans", "Roboto", sans-serif;
+            background: var(--surface-container);
+            color: var(--on-surface-default);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Главный макет страницы */
+        .app-header {
+            padding: 12px 24px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--outline-variant);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .app-title-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-title {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .app-controls-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .app-date-picker {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .app-date-input, .app-select-input {
+            background: var(--surface-container-high);
+            border: 1px solid var(--outline-variant);
+            color: var(--on-surface-default);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-family: inherit;
+            outline: none;
+            font-size: 13px;
+            height: 34px;
+            box-sizing: border-box;
+        }
+
+        .app-weight-input {
+            width: 70px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Панель показателей сверху */
+        .hud-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            padding: 12px 24px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--outline-variant);
+        }
+
+        .hud-card {
+            background: var(--surface-container);
+            border: 1px solid var(--outline-variant);
+            padding: 10px 14px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .hud-card-label {
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--on-surface-de-emphasis);
+        }
+
+        .hud-card-value {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        /* Основной контент */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 16px 24px;
+            gap: 16px;
+        }
+
+        .chart-section {
+            background: var(--surface);
+            border: 1px solid var(--outline-variant);
+            border-radius: 16px;
+            padding: 16px;
+            min-height: 180px;
+        }
+
+        .workspace-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Навигация по вкладкам */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--outline-variant);
+            padding-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--on-surface-de-emphasis);
+            cursor: pointer;
+            border-radius: 20px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab-btn:hover {
+            background: var(--surface-container-high);
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: var(--on-primary);
+        }
+
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        /* Сетки для форм логгеров */
+        .journal-loggers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        /* Оформление форм */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            background: var(--surface);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--outline-variant);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-group label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--on-surface-de-emphasis);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            background: var(--surface-container);
+            border: 1px solid var(--outline-variant);
+            color: var(--on-surface-default);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+            height: 38px;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+        }
+
+        /* Переключатель граммы/штуки */
+        .unit-toggle {
+            display: flex;
+            border: 1px solid var(--outline-variant);
+            border-radius: 8px;
+            overflow: hidden;
+            height: 38px;
+        }
+
+        .unit-toggle-btn {
+            flex: 1;
+            background: var(--surface-container);
+            border: none;
+            color: var(--on-surface-de-emphasis);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .unit-toggle-btn.active {
+            background: var(--primary);
+            color: var(--on-primary);
+        }
+
+        .submit-btn {
+            background: var(--primary);
+            color: var(--on-primary);
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 38px;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.9;
+        }
+
+        .submit-btn:disabled {
+            background: var(--outline-variant);
+            color: var(--on-surface-de-emphasis);
+            cursor: not-allowed;
+        }
+
+        /* Свитч настроек */
+        .switch-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        /* Таблицы */
+        .data-table-wrapper {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--outline-variant);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: var(--surface);
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--outline-variant);
+            white-space: nowrap;
+        }
+
+        .data-table th {
+            font-weight: 500;
+            color: var(--on-surface-de-emphasis);
+            background: var(--surface-container);
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--error);
+            cursor: pointer;
+            font-size: 20px;
+            padding: 0;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .delete-btn:hover {
+            background-color: var(--surface-container-high);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--on-surface-de-emphasis);
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px dashed var(--outline-variant);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Шапка приложения с выбором параметров дня -->
+    <header class="app-header">
+        <div class="app-title-group">
+            <h1 class="app-title" style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-icons" style="color: var(--primary);">fitbit</span> Sheeessh, yes
+            </h1>
+        </div>
+        
+        <div class="app-controls-row">
+            <!-- Выбор даты -->
+            <div class="app-date-picker">
+                <span class="material-icons" style="color: var(--primary); font-size: 18px;">calendar_today</span>
+                <input type="date" id="app-date-select" class="app-date-input" onchange="window.onDateChange(this.value)">
+            </div>
+
+            <!-- Текущий вес -->
+            <div class="app-date-picker">
+                <span class="material-icons" style="color: var(--success); font-size: 18px;">scale</span>
+                <input type="number" id="app-weight-select" class="app-date-input app-weight-input" min="30" max="300" step="0.1" placeholder="Вес" oninput="window.onWeightChange(this.value)">
+                <span style="font-size: 12px; font-weight: bold; color: var(--on-surface-de-emphasis);">кг</span>
+            </div>
+
+            <!-- Режим дня -->
+            <div class="app-date-picker">
+                <span class="material-icons" style="color: var(--accent-purple); font-size: 18px;">sports_gymnastics</span>
+                <select id="app-activity-select" class="app-select-input" onchange="window.onActivityChange(this.value)">
+                    <option value="rest">🛋️ Отдых</option>
+                    <option value="active">🚶‍♂️ Активный день</option>
+                    <option value="run">🏃‍♂️ Бег (Кардио)</option>
+                    <option value="gym">🏋️‍♂️ Силовые (Зал)</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <!-- Верхние показатели (HUD) -->
+    <section class="hud-panel">
+        <div class="hud-card">
+            <span class="hud-card-label">Всего калорий</span>
+            <span class="hud-card-value" id="hud-kcal" style="color: var(--primary);">0 / 2000 ккал</span>
+        </div>
+        <div class="hud-card">
+            <span class="hud-card-label">Белки (P)</span>
+            <span class="hud-card-value" id="hud-protein" style="color: var(--success);">0г / 130г</span>
+        </div>
+        <div class="hud-card">
+            <span class="hud-card-label">Жиры (F)</span>
+            <span class="hud-card-value" id="hud-fat" style="color: var(--warning);">0г / 70г</span>
+        </div>
+        <div class="hud-card">
+            <span class="hud-card-label">Углеводы (C)</span>
+            <span class="hud-card-value" id="hud-carbs" style="color: var(--accent-blue);">0г / 200г</span>
+        </div>
+        <div class="hud-card">
+            <span class="hud-card-label">Сон сегодня</span>
+            <span class="hud-card-value" id="hud-sleep" style="color: var(--accent-purple);">Нет записи 😴</span>
+        </div>
+    </section>
+
+    <!-- Основная рабочая область -->
+    <main class="main-content">
+        <!-- Секция с адаптивным графиком БЖУ -->
+        <div class="chart-section" id="chart-container"></div>
+
+        <!-- Контейнер со вкладками -->
+        <div id="vTable" class="workspace-container"></div>
+    </main>
+
+    <script>
+    // Встроенная база продуктов (добавлены поштучные признаки!)
+    const DEFAULT_FOODS = [
+        { id: "1", name: "Банан свежий", kcal: 95, p: 1.5, f: 0.2, c: 21.8, isPiece: true, pieceWeight: 120, pieceName: "шт" }
+    ];
+
+    // Чтение сохранённых данных с безопасными фоллбеками
+    const getSavedFoods = () => {
+        const saved = localStorage.getItem('macro_tracker_custom_foods_v3');
+        return saved ? JSON.parse(saved) : DEFAULT_FOODS;
+    };
+
+    const getSavedLogs = () => {
+        const saved = localStorage.getItem('macro_tracker_logs_v3');
+        return saved ? JSON.parse(saved) : [];
+    };
+
+    const getSavedSleepLogs = () => {
+        const saved = localStorage.getItem('macro_tracker_sleep_logs_v3');
+        return saved ? JSON.parse(saved) : [];
+    };
+
+    const getSavedGoals = () => {
+        const saved = localStorage.getItem('macro_tracker_goals_v3');
+        return saved ? JSON.parse(saved) : { kcal: 2000, p: 130, f: 70, c: 200 };
+    };
+
+    const getSavedWeightLogs = () => {
+        const saved = localStorage.getItem('macro_tracker_weight_logs_v3');
+        return saved ? JSON.parse(saved) : [];
+    };
+
+    const getSavedActivityLogs = () => {
+        const saved = localStorage.getItem('macro_tracker_activity_logs_v3');
+        return saved ? JSON.parse(saved) : [];
+    };
+
+    const getSavedAutoCalc = () => {
+        const saved = localStorage.getItem('macro_tracker_autocalc');
+        return saved !== "false"; // По дефолту true
+    };
+
+    const getSavedDefaultWeight = () => {
+        return parseFloat(localStorage.getItem('macro_tracker_default_weight')) || 75;
+    };
+
+    // Автономное реактивное состояние приложения
+    const state = {
+        date: new Date().toISOString().split('T')[0],
+        foods: getSavedFoods(),
+        logs: getSavedLogs(),
+        sleepLogs: getSavedSleepLogs(),
+        weightLogs: getSavedWeightLogs(),
+        activityLogs: getSavedActivityLogs(),
+        goals: getSavedGoals(),
+        autoCalculate: getSavedAutoCalc(),
+        defaultWeight: getSavedDefaultWeight(),
+        activeTab: "journal",
+        // Временное состояние логгера питания (граммы или штуки)
+        logUnitType: "piece" 
+    };
+
+    // Рассчитать нормы КБЖУ на основе веса и активности
+    const calculateKBJU = (weight, activityType) => {
+        let kcalFactor = 26; // По умолчанию: Отдых
+        let proteinFactor = 1.6; // г/кг
+        let fatFactor = 0.9; // г/кг
+
+        switch(activityType) {
+            case "active":
+                kcalFactor = 30;
+                proteinFactor = 1.7;
+                fatFactor = 1.0;
+                break;
+            case "run":
+                kcalFactor = 34;
+                proteinFactor = 1.8;
+                fatFactor = 0.9;
+                break;
+            case "gym":
+                kcalFactor = 37;
+                proteinFactor = 2.1;
+                fatFactor = 0.9;
+                break;
+            case "rest":
+            default:
+                kcalFactor = 25;
+                proteinFactor = 1.6;
+                fatFactor = 0.9;
+                break;
+        }
+
+        const kcal = Math.round(weight * kcalFactor);
+        const p = Math.round(weight * proteinFactor);
+        const f = Math.round(weight * fatFactor);
+        // Углеводы — остаточный калораж: (Калории - Белки*4 - Жиры*9) / 4
+        const c = Math.round((kcal - (p * 4) - (f * 9)) / 4);
+
+        return { kcal, p, f, c };
+    };
+
+    // Функция мутации состояния с автосохранением и перерендером
+    const updateState = (key, value) => {
+        state[key] = value;
+        // Сохранение в localStorage
+        if (key === 'foods') localStorage.setItem('macro_tracker_custom_foods_v3', JSON.stringify(value));
+        if (key === 'logs') localStorage.setItem('macro_tracker_logs_v3', JSON.stringify(value));
+        if (key === 'sleepLogs') localStorage.setItem('macro_tracker_sleep_logs_v3', JSON.stringify(value));
+        if (key === 'weightLogs') localStorage.setItem('macro_tracker_weight_logs_v3', JSON.stringify(value));
+        if (key === 'activityLogs') localStorage.setItem('macro_tracker_activity_logs_v3', JSON.stringify(value));
+        if (key === 'goals') localStorage.setItem('macro_tracker_goals_v3', JSON.stringify(value));
+        if (key === 'autoCalculate') localStorage.setItem('macro_tracker_autocalc', JSON.stringify(value));
+        if (key === 'defaultWeight') localStorage.setItem('macro_tracker_default_weight', value.toString());
+
+        // Пересчет КБЖУ, если включен авторасчет
+        if (state.autoCalculate && (key === 'weightLogs' || key === 'activityLogs' || key === 'date' || key === 'autoCalculate' || key === 'defaultWeight')) {
+            const currentWeight = getCurrentWeightForDate(state.date);
+            const currentActivity = getCurrentActivityForDate(state.date);
+            const calculated = calculateKBJU(currentWeight, currentActivity);
+            state.goals = calculated;
+            localStorage.setItem('macro_tracker_goals_v3', JSON.stringify(calculated));
+        }
+
+        // Вызов отрисовки интерфейса
+        renderApp();
+    };
+
+    // Вспомогательные функции получения веса и активности на выбранную дату
+    const getCurrentWeightForDate = (date) => {
+        const found = state.weightLogs.find(w => w.date === date);
+        return found ? found.weight : state.defaultWeight;
+    };
+
+    const getCurrentActivityForDate = (date) => {
+        const found = state.activityLogs.find(a => a.date === date);
+        return found ? found.type : "rest";
+    };
+
+    // Обработчики изменений в шапке
+    window.onDateChange = (newDate) => {
+        updateState('date', newDate);
+    };
+
+    window.onWeightChange = (weight) => {
+        const val = parseFloat(weight) || 0;
+        if (val > 0) {
+            // Записываем вес на текущую дату
+            const filtered = state.weightLogs.filter(w => w.date !== state.date);
+            updateState('weightLogs', [...filtered, { date: state.date, weight: val }]);
+            updateState('defaultWeight', val); // обновляем дефолтный вес
+        }
+    };
+
+    window.onActivityChange = (type) => {
+        const filtered = state.activityLogs.filter(a => a.date !== state.date);
+        updateState('activityLogs', [...filtered, { date: state.date, type }]);
+    };
+
+    // Отрисовка графика через Observable Plot
+    const renderChart = () => {
+        const container = document.getElementById('chart-container');
+        if (!container) return;
+        container.innerHTML = ''; // Очистка старого контента
+
+        const dayLogs = state.logs.filter(d => d.date === state.date);
+        
+        // Суммирование съеденных макросов за текущую дату
+        const totals = dayLogs.reduce((acc, curr) => {
+            acc.kcal += curr.kcal;
+            acc.p += curr.p;
+            acc.f += curr.f;
+            acc.c += curr.c;
+            return acc;
+        }, { kcal: 0, p: 0, f: 0, c: 0 });
+
+        const chartData = [
+            { label: "Калории", current: totals.kcal, goal: state.goals.kcal, unit: " ккал" },
+            { label: "Белки (P)", current: totals.p, goal: state.goals.p, unit: " г" },
+            { label: "Жиры (F)", current: totals.f, goal: state.goals.f, unit: " г" },
+            { label: "Углеводы (C)", current: totals.c, goal: state.goals.c, unit: " г" }
+        ];
+
+        const width = container.clientWidth || 400;
+
+        // Создание графика
+        const plot = Plot.plot({
+            width: width - 32,
+            height: 160,
+            marginLeft: 110,
+            x: { axis: null, domain: [0, 1] },
+            y: { label: null, domain: chartData.map(d => d.label) },
+            style: {
+                background: "transparent",
+                color: "var(--on-surface-default)"
+            },
+            marks: [
+                // Теневые фоновые плашки (цели)
+                Plot.barX(chartData, {
+                    x: () => 1,
+                    y: "label",
+                    fill: "var(--outline-variant)",
+                    insetTop: 6,
+                    insetBottom: 6,
+                    rx: 4
+                }),
+                // Цветной прогресс достижения целей БЖУ
+                Plot.barX(chartData, {
+                    x: d => Math.min(1, d.current / (d.goal || 1)),
+                    y: "label",
+                    fill: d => d.current > d.goal ? "var(--error)" : "var(--primary)",
+                    insetTop: 6,
+                    insetBottom: 6,
+                    rx: 4
+                }),
+                // Подпись текстом "Факт / Цель"
+                Plot.text(chartData, {
+                    x: 0,
+                    y: "label",
+                    text: d => `${d.current.toFixed(0)} / ${d.goal.toFixed(0)}${d.unit}`,
+                    textAnchor: "start",
+                    dx: 8,
+                    fill: "var(--on-surface-default)",
+                    fontWeight: "bold",
+                    fontSize: 11
+                })
+            ]
+        });
+
+        container.appendChild(plot);
+    };
+
+    // Функция построения графика динамики веса
+    const renderWeightChart = () => {
+        const container = document.getElementById('weight-chart-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const sortedLogs = [...state.weightLogs]
+            .map(d => ({ ...d, dateObj: new Date(d.date) }))
+            .sort((a, b) => a.dateObj - b.dateObj);
+
+        if (sortedLogs.length === 0) {
+            container.innerHTML = '<div class="empty-state" style="border:none;">Добавьте данные в историю взвешиваний выше, чтобы увидеть график прогресса</div>';
+            return;
+        }
+
+        const width = container.clientWidth || 400;
+
+        const plot = Plot.plot({
+            width: width - 32,
+            height: 180,
+            x: { type: "utc", label: "Дата", grid: true },
+            y: { label: "Вес (кг)", grid: true, zero: false },
+            style: {
+                background: "transparent",
+                color: "var(--on-surface-default)"
+            },
+            marks: [
+                Plot.lineY(sortedLogs, {
+                    x: "dateObj",
+                    y: "weight",
+                    stroke: "var(--success)",
+                    strokeWidth: 2,
+                    marker: "circle"
+                }),
+                Plot.text(sortedLogs, {
+                    x: "dateObj",
+                    y: "weight",
+                    text: d => `${d.weight.toFixed(1)}`,
+                    dy: -12,
+                    fontSize: 10,
+                    fontWeight: "bold",
+                    fill: "var(--on-surface-default)"
+                })
+            ]
+        });
+
+        container.appendChild(plot);
+    };
+
+    // Основная функция отрисовки всего приложения
+    const renderApp = () => {
+        // Установка актуальных значений в шапке
+        document.getElementById('app-date-select').value = state.date;
+        document.getElementById('app-weight-select').value = getCurrentWeightForDate(state.date);
+        document.getElementById('app-activity-select').value = getCurrentActivityForDate(state.date);
+
+        // 1. Отрендерить график
+        renderChart();
+
+        // 2. Обновить верхний HUD
+        const dayLogs = state.logs.filter(d => d.date === state.date);
+        const totals = dayLogs.reduce((acc, curr) => {
+            acc.kcal += curr.kcal;
+            acc.p += curr.p;
+            acc.f += curr.f;
+            acc.c += curr.c;
+            return acc;
+        }, { kcal: 0, p: 0, f: 0, c: 0 });
+
+        const hudKcal = document.getElementById('hud-kcal');
+        hudKcal.innerText = `${totals.kcal.toFixed(0)} / ${state.goals.kcal} ккал`;
+        hudKcal.style.color = totals.kcal > state.goals.kcal ? "var(--error)" : "var(--primary)";
+
+        document.getElementById('hud-protein').innerText = `${totals.p.toFixed(0)}г / ${state.goals.p}г`;
+        document.getElementById('hud-fat').innerText = `${totals.f.toFixed(0)}г / ${state.goals.f}г`;
+        document.getElementById('hud-carbs').innerText = `${totals.c.toFixed(0)}г / ${state.goals.c}г`;
+
+        const nightSleep = state.sleepLogs.find(s => s.date === state.date && (s.type === 'night' || !s.type));
+        const afternoonSleep = state.sleepLogs.find(s => s.date === state.date && s.type === 'afternoon');
+
+        const hudSleep = document.getElementById('hud-sleep');
+        if (nightSleep || afternoonSleep) {
+            const nightVal = nightSleep ? `🌙 ${nightSleep.hours}ч` : '';
+            const afternoonVal = afternoonSleep ? `☀️ ${afternoonSleep.hours}ч` : '';
+            hudSleep.innerText = [nightVal, afternoonVal].filter(Boolean).join(' + ') || "0 ч";
+        } else {
+            hudSleep.innerText = "Нет записи 😴";
+        }
+
+        // 3. Отрендерить рабочую область (вкладки)
+        const container = document.getElementById('vTable');
+        if (!container) return;
+
+        const ratingEmojis = { "5": "😎", "4": "😊", "3": "😐", "2": "🥱", "1": "😫" };
+
+        // Ищем выбранный на текущий момент продукт в форме добавления
+        const selectedFoodId = window._lastSelectedFoodId || (state.foods[0] ? state.foods[0].id : "");
+        const activeFood = state.foods.find(f => f.id === selectedFoodId);
+
+        // Сбор аналитики веса
+        const sortedWeightLogs = [...state.weightLogs].sort((a, b) => a.date.localeCompare(b.date));
+        let weightStatsHtml = '';
+        if (sortedWeightLogs.length > 0) {
+            const initialWeight = sortedWeightLogs[0].weight;
+            const currentWeight = sortedWeightLogs[sortedWeightLogs.length - 1].weight;
+            const diff = currentWeight - initialWeight;
+            const minWeight = Math.min(...sortedWeightLogs.map(l => l.weight));
+            const maxWeight = Math.max(...sortedWeightLogs.map(l => l.weight));
+
+            const diffColor = diff < 0 ? "var(--success)" : diff > 0 ? "var(--error)" : "var(--on-surface-de-emphasis)";
+            const diffSign = diff > 0 ? `+${diff.toFixed(1)}` : `${diff.toFixed(1)}`;
+
+            weightStatsHtml = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div style="background: var(--surface-container-high); padding: 8px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 10px; color: var(--on-surface-de-emphasis); margin-bottom: 2px;">СТАРТОВЫЙ ВЕС</div>
+                        <div style="font-size: 14px; font-weight: bold;">${initialWeight.toFixed(1)} кг</div>
+                    </div>
+                    <div style="background: var(--surface-container-high); padding: 8px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 10px; color: var(--on-surface-de-emphasis); margin-bottom: 2px;">ТЕКУЩИЙ ВЕС</div>
+                        <div style="font-size: 14px; font-weight: bold; color: var(--success);">${currentWeight.toFixed(1)} кг</div>
+                    </div>
+                    <div style="background: var(--surface-container-high); padding: 8px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 10px; color: var(--on-surface-de-emphasis); margin-bottom: 2px;">РАЗНИЦА</div>
+                        <div style="font-size: 14px; font-weight: bold; color: ${diffColor};">${diffSign} кг</div>
+                    </div>
+                    <div style="background: var(--surface-container-high); padding: 8px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 10px; color: var(--on-surface-de-emphasis); margin-bottom: 2px;">ДИАПАЗОН (Mин-Mакс)</div>
+                        <div style="font-size: 12px; font-weight: bold;">${minWeight.toFixed(1)} - ${maxWeight.toFixed(1)} кг</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            weightStatsHtml = `<div style="text-align: center; color: var(--on-surface-de-emphasis); font-size: 12px; padding: 12px 0;">Запишите ваш вес, чтобы начать отслеживание прогресса.</div>`;
+        }
+
+        let html = `
+        <div class="workspace-container">
+            <!-- Навигационные вкладки -->
+            <div class="tabs">
+                <button class="tab-btn ${state.activeTab === 'journal' ? 'active' : ''}" onclick="window._switchTab('journal')">
+                    <span class="material-icons">menu_book</span> Дневник
+                </button>
+                <button class="tab-btn ${state.activeTab === 'foods' ? 'active' : ''}" onclick="window._switchTab('foods')">
+                    <span class="material-icons">inventory_2</span> Продукты (${state.foods.length})
+                </button>
+                <button class="tab-btn ${state.activeTab === 'weight' ? 'active' : ''}" onclick="window._switchTab('weight')">
+                    <span class="material-icons">scale</span> Контроль веса
+                </button>
+                <button class="tab-btn ${state.activeTab === 'settings' ? 'active' : ''}" onclick="window._switchTab('settings')">
+                    <span class="material-icons">settings</span> Конструктор КБЖУ
+                </button>
+            </div>
+
+            <!-- ВКЛАДКА: ДНЕВНИК ПИТАНИЯ И СНА -->
+            <div class="tab-content ${state.activeTab === 'journal' ? 'active' : ''}">
+                <div class="journal-loggers-grid">
+                    
+                    <!-- ФОРМА 1: Запись питания -->
+                    <form id="log-form" class="form-grid" onsubmit="window._addLogEntry(event)" style="margin:0;">
+                        <div class="form-group" style="grid-column: span 2; border-bottom: 1px solid var(--outline-variant); padding-bottom: 6px; margin-bottom: 4px;">
+                            <h5 style="margin: 0; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; color: var(--primary);">
+                                <span class="material-icons" style="font-size:18px;">restaurant</span> Записать приём пищи
+                            </h5>
+                        </div>
+                        <div class="form-group">
+                            <label>Приём пищи</label>
+                            <select id="log-meal" class="form-input">
+                                <option value="Завтрак">🍳 Завтрак</option>
+                                <option value="Обед">🍲 Обед</option>
+                                <option value="Ужин">🥗 Ужин</option>
+                                <option value="Перекус">🍎 Перекус</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Выбор продукта</label>
+                            <select id="log-food" class="form-input" onchange="window._onFoodSelectChange(this.value)" required>
+                                ${state.foods.length === 0 
+                                    ? '<option value="" disabled selected>Создайте продукты в базе!</option>' 
+                                    : state.foods.map(f => `<option value="${f.id}" ${f.id === selectedFoodId ? 'selected' : ''}>${f.name} (${f.kcal} ккал)</option>`).join('')
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Опция выбора режима записи: Граммы или Штуки -->
+                        ${activeFood && activeFood.isPiece ? `
+                            <div class="form-group">
+                                <label>Формат ввода</label>
+                                <div class="unit-toggle">
+                                    <button type="button" class="unit-toggle-btn ${state.logUnitType === 'grams' ? 'active' : ''}" onclick="window._setLogUnit('grams')">Граммы</button>
+                                    <button type="button" class="unit-toggle-btn ${state.logUnitType === 'piece' ? 'active' : ''}" onclick="window._setLogUnit('piece')">${activeFood.pieceName || 'шт'}</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label id="weight-label">${state.logUnitType === 'grams' ? 'Вес (граммы)' : 'Количество (' + (activeFood.pieceName || 'шт') + ')'}</label>
+                                <input type="number" id="log-weight" class="form-input" min="0.1" max="5000" step="${state.logUnitType === 'grams' ? '1' : '0.1'}" value="${state.logUnitType === 'grams' ? '100' : '1'}" required>
+                            </div>
+                        ` : `
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label>Вес (граммы)</label>
+                                <input type="number" id="log-weight" class="form-input" min="1" max="5000" value="100" required>
+                            </div>
+                        `}
+
+                        <button type="submit" class="submit-btn" style="grid-column: span 2;" ${state.foods.length === 0 ? 'disabled' : ''}>
+                            <span class="material-icons" style="font-size:16px;">add_circle</span> Добавить в журнал
+                        </button>
+                    </form>
+
+                    <!-- ФОРМА 2: Трекер сна -->
+                    <div class="form-grid" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 12px;">
+                        <div style="border-bottom: 1px solid var(--outline-variant); padding-bottom: 6px; margin-bottom: 4px;">
+                            <h5 style="margin: 0; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; color: var(--accent-purple);">
+                                <span class="material-icons" style="font-size:18px;">bedtime</span> Дневной и ночной сон
+                            </h5>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1;">
+                            <!-- НОЧНОЙ СОН -->
+                            <div style="border-right: 1px solid var(--outline-variant); padding-right: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px;">
+                                <div style="font-size: 11px; font-weight: bold; color: var(--on-surface-de-emphasis); text-transform: uppercase;">🌙 Ночной сон</div>
+                                ${nightSleep 
+                                    ? `
+                                    <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; justify-content: center;">
+                                        <div style="display: flex; flex-direction: column; align-items: center; background: var(--surface-container-high); padding: 8px; border-radius: 8px;">
+                                            <span style="font-size: 24px; line-height: 1;">${ratingEmojis[nightSleep.rating] || "😴"}</span>
+                                            <div style="font-size: 13px; font-weight: bold; color: var(--on-surface-default); margin-top: 4px;">${nightSleep.hours} ч.</div>
+                                        </div>
+                                        <button onclick="window._deleteSleep('${nightSleep.id}')" class="submit-btn" style="background: var(--error); color: var(--on-primary); width: 100%; height: 28px; font-size: 11px; padding: 0;">
+                                            <span class="material-icons" style="font-size:14px;">delete</span> Сбросить
+                                        </button>
+                                    </div>
+                                    `
+                                    : `
+                                    <form onsubmit="window._addSleepEntry(event, 'night')" style="display: flex; flex-direction: column; gap: 6px; flex: 1; justify-content: space-between;">
+                                        <div class="form-group">
+                                            <label style="font-size: 9px;">Время (ч)</label>
+                                            <input type="number" id="sleep-hours-night" class="form-input" style="height: 28px; padding: 4px; font-size: 11px;" min="0.5" max="24" step="0.5" value="8" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label style="font-size: 9px;">Качество</label>
+                                            <select id="sleep-rating-night" class="form-input" style="height: 28px; padding: 2px; font-size: 11px;">
+                                                <option value="5">😎 Отл</option>
+                                                <option value="4">😊 Хор</option>
+                                                <option value="3" selected>😐 Норм</option>
+                                                <option value="2">🥱 Так себе</option>
+                                                <option value="1">😫 Плохо</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="submit-btn" style="background: var(--accent-purple); width: 100%; height: 28px; font-size: 11px; padding: 0;">
+                                            Записать
+                                        </button>
+                                    </form>
+                                    `
+                                }
+                            </div>
+
+                            <!-- ПОСЛЕОБЕДЕННЫЙ (ДНЕВНОЙ) СОН -->
+                            <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 8px;">
+                                <div style="font-size: 11px; font-weight: bold; color: var(--on-surface-de-emphasis); text-transform: uppercase;">☀️ После обеда</div>
+                                ${afternoonSleep 
+                                    ? `
+                                    <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; justify-content: center;">
+                                        <div style="display: flex; flex-direction: column; align-items: center; background: var(--surface-container-high); padding: 8px; border-radius: 8px;">
+                                            <span style="font-size: 24px; line-height: 1;">${ratingEmojis[afternoonSleep.rating] || "😴"}</span>
+                                            <div style="font-size: 13px; font-weight: bold; color: var(--on-surface-default); margin-top: 4px;">${afternoonSleep.hours} ч.</div>
+                                        </div>
+                                        <button onclick="window._deleteSleep('${afternoonSleep.id}')" class="submit-btn" style="background: var(--error); color: var(--on-primary); width: 100%; height: 28px; font-size: 11px; padding: 0;">
+                                            <span class="material-icons" style="font-size:14px;">delete</span> Сбросить
+                                        </button>
+                                    </div>
+                                    `
+                                    : `
+                                    <form onsubmit="window._addSleepEntry(event, 'afternoon')" style="display: flex; flex-direction: column; gap: 6px; flex: 1; justify-content: space-between;">
+                                        <div class="form-group">
+                                            <label style="font-size: 9px;">Время (ч)</label>
+                                            <input type="number" id="sleep-hours-afternoon" class="form-input" style="height: 28px; padding: 4px; font-size: 11px;" min="0.5" max="12" step="0.5" value="1.5" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label style="font-size: 9px;">Качество</label>
+                                            <select id="sleep-rating-afternoon" class="form-input" style="height: 28px; padding: 2px; font-size: 11px;">
+                                                <option value="5">😎 Отл</option>
+                                                <option value="4">😊 Хор</option>
+                                                <option value="3" selected>😐 Норм</option>
+                                                <option value="2">🥱 Так себе</option>
+                                                <option value="1">😫 Плохо</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="submit-btn" style="background: var(--accent-purple); width: 100%; height: 28px; font-size: 11px; padding: 0;">
+                                            Записать
+                                        </button>
+                                    </form>
+                                    `
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Таблица записей журнала -->
+                <h4 style="margin: 8px 0 0 0; font-size: 14px; font-weight: 500;">Записи питания за ${state.date}</h4>
+                ${dayLogs.length === 0 
+                    ? `<div class="empty-state">Пока нет записей о питании. Добавьте съеденное через форму выше!</div>`
+                    : `<div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Приём</th>
+                                    <th>Продукт</th>
+                                    <th style="text-align:right;">Вес/Кол-во</th>
+                                    <th style="text-align:right;">Ккал</th>
+                                    <th style="text-align:right;">Б / Ж / У (г)</th>
+                                    <th style="width:30px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${dayLogs.map(log => `
+                                    <tr>
+                                        <td style="font-weight:500;">${log.meal}</td>
+                                        <td>
+                                            ${log.foodName}
+                                            ${log.loggedAsPiece ? `<span style="font-size:10.5px; color:var(--on-surface-de-emphasis); block:inline; margin-left: 4px;">(${log.pieceQuantity} ${log.pieceUnit})</span>` : ''}
+                                        </td>
+                                        <td style="text-align:right;">${log.grams.toFixed(0)}г</td>
+                                        <td style="text-align:right; font-weight:bold; color:var(--primary);">${log.kcal.toFixed(0)}</td>
+                                        <td style="text-align:right; color:var(--on-surface-de-emphasis);">
+                                            ${log.p.toFixed(1)} / ${log.f.toFixed(1)} / ${log.c.toFixed(1)}
+                                        </td>
+                                        <td style="text-align:center;">
+                                            <button class="delete-btn" title="Удалить запись" onclick="window._deleteLog('${log.id}')">×</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                       </div>`
+                }
+            </div>
+
+            <!-- ВКЛАДКА: БАЗА ПРОДУКТОВ -->
+            <div class="tab-content ${state.activeTab === 'foods' ? 'active' : ''}">
+                <form id="product-form" class="form-grid" onsubmit="window._addNewProduct(event)">
+                    <div class="form-group" style="grid-column: span 2; border-bottom: 1px solid var(--outline-variant); padding-bottom: 6px; margin-bottom: 4px;">
+                        <h5 style="margin: 0; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; color: var(--primary);">
+                            <span class="material-icons" style="font-size:18px;">add_box</span> Создать новый продукт в базе
+                        </h5>
+                    </div>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Название продукта / Блюда</label>
+                        <input type="text" id="prod-name" class="form-input" placeholder="Например: Протеиновый батончик" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Ккал (на 100г)</label>
+                        <input type="number" id="prod-kcal" class="form-input" min="0" max="1000" placeholder="150" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Белки (на 100г)</label>
+                        <input type="number" id="prod-p" class="form-input" min="0" max="100" step="0.1" placeholder="12" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Жиры (на 100г)</label>
+                        <input type="number" id="prod-f" class="form-input" min="0" max="100" step="0.1" placeholder="4" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Углеводы (на 100г)</label>
+                        <input type="number" id="prod-c" class="form-input" min="0" max="100" step="0.1" placeholder="2" required>
+                    </div>
+
+                    <!-- Дополнительные поля штучности -->
+                    <div class="form-group" style="grid-column: span 2; background: var(--surface-container); padding: 12px; border-radius: 8px; margin-top: 4px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform:none; font-size: 12px; font-weight: bold;">
+                            <input type="checkbox" id="prod-is-piece" onchange="window._toggleProdPieceFields(this.checked)" style="width: 16px; height: 16px;">
+                            Поштучный продукт? (яйцо, банан, пачка, порция)
+                        </label>
+                        <div id="piece-fields" style="display: none; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
+                            <div class="form-group">
+                                <label style="font-size:9px;">Название меры (шт, пачка, уп)</label>
+                                <input type="text" id="prod-piece-name" class="form-input" style="height:32px; font-size:12px;" placeholder="шт">
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size:9px;">Вес 1 штуки (граммы)</label>
+                                <input type="number" id="prod-piece-weight" class="form-input" style="height:32px; font-size:12px;" min="1" max="5000" placeholder="60">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" style="grid-column: span 2; width: 100%;">
+                        <span class="material-icons" style="font-size:16px;">save</span> Создать и сохранить
+                    </button>
+                </form>
+
+                <h4 style="margin: 8px 0 0 0; font-size: 14px; font-weight: 500;">Глобальный список продуктов</h4>
+                ${state.foods.length === 0 
+                    ? `<div class="empty-state">Список продуктов пуст. Создайте новое блюдо сверху!</div>`
+                    : `<div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Наименование (100г)</th>
+                                    <th>Тип</th>
+                                    <th style="text-align:right;">Ккал</th>
+                                    <th style="text-align:right;">Белки</th>
+                                    <th style="text-align:right;">Жиры</th>
+                                    <th style="text-align:right;">Углеводы</th>
+                                    <th style="width:30px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${state.foods.map(item => `
+                                    <tr>
+                                        <td style="font-weight:500;">${item.name}</td>
+                                        <td>
+                                            ${item.isPiece 
+                                                ? `<span style="background: var(--primary-container, #d3e3fd); color: var(--on-primary-container, #041e49); padding: 2px 6px; border-radius: 4px; font-size:11px;">Штучный (${item.pieceWeight}г/${item.pieceName})</span>` 
+                                                : `<span style="background: var(--outline-variant); color: var(--on-surface-de-emphasis); padding: 2px 6px; border-radius: 4px; font-size:11px;">Весовой</span>`
+                                            }
+                                        </td>
+                                        <td style="text-align:right; font-weight:bold;">${item.kcal}</td>
+                                        <td style="text-align:right; color:var(--success);">${item.p}г</td>
+                                        <td style="text-align:right; color:var(--warning);">${item.f}г</td>
+                                        <td style="text-align:right; color:var(--primary);">${item.c}г</td>
+                                        <td style="text-align:center;">
+                                            <button class="delete-btn" title="Удалить из базы" onclick="window._deleteProduct('${item.id}')">×</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                       </div>`
+                }
+            </div>
+
+            <!-- ВКЛАДКА: КОНТРОЛЬ ВЕСА -->
+            <div class="tab-content ${state.activeTab === 'weight' ? 'active' : ''}">
+                <div class="journal-loggers-grid">
+                    <!-- ФОРМА 1: Запись веса -->
+                    <form id="weight-tab-form" class="form-grid" onsubmit="window._addWeightFromTab(event)" style="margin:0;">
+                        <div class="form-group" style="grid-column: span 2; border-bottom: 1px solid var(--outline-variant); padding-bottom: 6px; margin-bottom: 4px;">
+                            <h5 style="margin: 0; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; color: var(--success);">
+                                <span class="material-icons" style="font-size:18px;">scale</span> Зафиксировать вес
+                            </h5>
+                        </div>
+                        <div class="form-group">
+                            <label>Дата взвешивания</label>
+                            <input type="date" id="weight-tab-date" class="form-input" value="${state.date}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Вес (кг)</label>
+                            <input type="number" id="weight-tab-value" class="form-input" min="30" max="300" step="0.1" value="${getCurrentWeightForDate(state.date)}" placeholder="75.0" required>
+                        </div>
+                        <button type="submit" class="submit-btn" style="grid-column: span 2; background: var(--success);">
+                            <span class="material-icons" style="font-size:16px;">add_circle</span> Записать вес
+                        </button>
+                    </form>
+
+                    <!-- ИНФО-ПАНЕЛЬ: Статистика прогресса веса -->
+                    <div class="form-grid" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 12px;">
+                        <div style="border-bottom: 1px solid var(--outline-variant); padding-bottom: 6px; margin-bottom: 4px;">
+                            <h5 style="margin: 0; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; color: var(--accent-purple);">
+                                <span class="material-icons" style="font-size:18px;">trending_down</span> Статистика прогресса
+                            </h5>
+                        </div>
+                        <div id="weight-stats-container" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                            ${weightStatsHtml}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- График прогресса веса -->
+                <h4 style="margin: 8px 0 0 0; font-size: 14px; font-weight: 500;">График динамики веса</h4>
+                <div class="chart-section" id="weight-chart-container" style="background: var(--surface);"></div>
+
+                <!-- Таблица записей веса -->
+                <h4 style="margin: 8px 0 0 0; font-size: 14px; font-weight: 500;">История взвешиваний</h4>
+                ${state.weightLogs.length === 0 
+                    ? `<div class="empty-state">Пока нет записей о взвешиваниях. Добавьте значение веса через форму выше!</div>`
+                    : `<div class="data-table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th style="text-align:right;">Зафиксированный вес</th>
+                                    <th style="width:30px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${[...state.weightLogs].sort((a, b) => b.date.localeCompare(a.date)).map(log => `
+                                    <tr>
+                                        <td style="font-weight:500;">${log.date}</td>
+                                        <td style="text-align:right; font-weight:bold; color:var(--success);">${log.weight.toFixed(1)} кг</td>
+                                        <td style="text-align:center;">
+                                            <button class="delete-btn" title="Удалить запись" onclick="window._deleteWeight('${log.date}')">×</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                       </div>`
+                }
+            </div>
+
+            <!-- ВКЛАДКА: НАСТРОЙКИ СУТОЧНЫХ ЦЕЛЕЙ -->
+            <div class="tab-content ${state.activeTab === 'settings' ? 'active' : ''}">
+                <div style="background: var(--surface); padding: 16px; border-radius: 12px; border: 1px solid var(--outline-variant);">
+                    <div class="switch-group">
+                        <input type="checkbox" id="autocalc-toggle" style="width: 20px; height: 20px; cursor:pointer;" ${state.autoCalculate ? 'checked' : ''} onchange="window._toggleAutoCalc(this.checked)">
+                        <label for="autocalc-toggle" style="font-weight: bold; font-size: 14px; cursor:pointer;">
+                            🔄 Автоматически рассчитывать КБЖУ от веса и режима дня
+                        </label>
+                    </div>
+                    <p style="font-size: 12.5px; color: var(--on-surface-de-emphasis); margin: 0 0 16px 30px; line-height: 1.4;">
+                        При включении нормы будут рассчитываться мгновенно по формуле:<br>
+                        • <b>🛋️ Отдых</b>: 25 ккал/кг, 1.6г белка/кг, 0.9г жира/кг<br>
+                        • <b>🚶‍♂️ Активный день</b>: 30 ккал/кг, 1.7г белка/кг, 1.0г жира/кг<br>
+                        • <b>🏃‍♂️ Бег</b>: 34 ккал/кг, 1.8г белка/кг, 0.9г жира/кг<br>
+                        • <b>🏋️‍♂️ Силовые</b>: 37 ккал/кг, 2.1г белка/кг, 0.9г жира/кг
+                    </p>
+                </div>
+
+                <div class="form-grid">
+                    <div style="grid-column: span 2; border-bottom: 1px solid var(--outline-variant); padding-bottom: 6px; margin-bottom: 4px;">
+                        <h5 style="margin: 0; font-size: 13px; font-weight: 500; color: var(--on-surface-de-emphasis);">
+                            ${state.autoCalculate ? '📊 Ваши текущие автоматически рассчитанные лимиты' : '📝 Введите индивидуальные лимиты вручную'}
+                        </h5>
+                    </div>
+                    <div class="form-group">
+                        <label>Цель калорий (ккал)</label>
+                        <input type="number" id="goal-kcal" class="form-input" value="${state.goals.kcal}" ${state.autoCalculate ? 'disabled' : ''} oninput="window._updateGoal('kcal', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Норма белков (г)</label>
+                        <input type="number" id="goal-p" class="form-input" value="${state.goals.p}" ${state.autoCalculate ? 'disabled' : ''} oninput="window._updateGoal('p', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Норма жиров (г)</label>
+                        <input type="number" id="goal-f" class="form-input" value="${state.goals.f}" ${state.autoCalculate ? 'disabled' : ''} oninput="window._updateGoal('f', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Норма углеводов (г)</label>
+                        <input type="number" id="goal-c" class="form-input" value="${state.goals.c}" ${state.autoCalculate ? 'disabled' : ''} oninput="window._updateGoal('c', this.value)">
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+
+        container.innerHTML = html;
+
+        // Отрисовка графика веса, если вкладка активна
+        if (state.activeTab === 'weight') {
+            renderWeightChart();
+        }
+    };
+
+    // Навигация по вкладкам
+    window._switchTab = (tabName) => {
+        updateState('activeTab', tabName);
+    };
+
+    // Изменение типа записи в логгере (граммы или штуки)
+    window._setLogUnit = (type) => {
+        state.logUnitType = type;
+        renderApp();
+    };
+
+    // Выбор продукта в выпадающем списке логгера
+    window._onFoodSelectChange = (id) => {
+        window._lastSelectedFoodId = id;
+        const food = state.foods.find(f => f.id === id);
+        if (food) {
+            state.logUnitType = food.isPiece ? "piece" : "grams";
+        }
+        renderApp();
+    };
+
+    // Включение/выключение авторасчета целей
+    window._toggleAutoCalc = (checked) => {
+        updateState('autoCalculate', checked);
+    };
+
+    // Переключение полей поштучного продукта при создании продукта
+    window._toggleProdPieceFields = (checked) => {
+        const fields = document.getElementById('piece-fields');
+        if (fields) {
+            fields.style.display = checked ? 'grid' : 'none';
+        }
+    };
+
+    // Добавление нового продукта в базу
+    window._addNewProduct = (event) => {
+        event.preventDefault();
+        const name = document.getElementById('prod-name').value.trim();
+        const kcal = parseFloat(document.getElementById('prod-kcal').value) || 0;
+        const p = parseFloat(document.getElementById('prod-p').value) || 0;
+        const f = parseFloat(document.getElementById('prod-f').value) || 0;
+        const c = parseFloat(document.getElementById('prod-c').value) || 0;
+
+        const isPiece = document.getElementById('prod-is-piece').checked;
+        let pieceName = "шт";
+        let pieceWeight = 100;
+
+        if (isPiece) {
+            pieceName = document.getElementById('prod-piece-name').value.trim() || "шт";
+            pieceWeight = parseFloat(document.getElementById('prod-piece-weight').value) || 100;
+        }
+
+        if (!name) return;
+
+        const newProduct = {
+            id: Math.random().toString(36).substr(2, 9),
+            name,
+            kcal,
+            p,
+            f,
+            c,
+            isPiece,
+            pieceWeight,
+            pieceName
+        };
+
+        const updatedFoods = [...state.foods, newProduct];
+        window._lastSelectedFoodId = newProduct.id;
+        state.logUnitType = isPiece ? "piece" : "grams";
+
+        updateState('foods', updatedFoods);
+    };
+
+    // Удаление продукта из базы
+    window._deleteProduct = (id) => {
+        updateState('foods', state.foods.filter(item => item.id !== id));
+    };
+
+    // Добавление записи о приеме пищи в журнал питания
+    // Добавление записи о приеме пищи в журнал питания
+    window._addLogEntry = (event) => {
+        event.preventDefault();
+        const meal = document.getElementById('log-meal').value;
+        const foodId = document.getElementById('log-food').value;
+        
+        const foodItem = state.foods.find(f => f.id === foodId);
+        if (!foodItem) return;
+
+        let weight = 100;
+        let loggedAsPiece = false;
+        let pieceQuantity = 1;
+
+        const weightInput = document.getElementById('log-weight');
+        const userVal = parseFloat(weightInput.value) || 0;
+
+        if (foodItem.isPiece && state.logUnitType === 'piece') {
+            loggedAsPiece = true;
+            pieceQuantity = userVal;
+            weight = userVal * foodItem.pieceWeight;
+        } else {
+            weight = userVal;
+        }
+
+        if (weight <= 0) return;
+
+        const factor = weight / 100;
+        const logEntry = {
+            id: Math.random().toString(36).substr(2, 9),
+            date: state.date,
+            meal,
+            foodName: foodItem.name,
+            grams: weight,
+            kcal: foodItem.kcal * factor,
+            p: foodItem.p * factor,
+            f: foodItem.f * factor,
+            c: foodItem.c * factor,
+            loggedAsPiece,
+            pieceQuantity,
+            pieceUnit: foodItem.pieceName || 'шт'
+        };
+
+        updateState('logs', [...state.logs, logEntry]);
+    };
+
+    // Удаление записи приема пищи из таблицы логов
+    window._deleteLog = (id) => {
+        updateState('logs', state.logs.filter(log => log.id !== id));
+    };
+
+    // Добавление сна
+    window._addSleepEntry = (event, type) => {
+        event.preventDefault();
+        
+        let hours, rating;
+        if (type === 'night') {
+            hours = parseFloat(document.getElementById('sleep-hours-night').value) || 0;
+            rating = document.getElementById('sleep-rating-night').value;
+        } else {
+            hours = parseFloat(document.getElementById('sleep-hours-afternoon').value) || 0;
+            rating = document.getElementById('sleep-rating-afternoon').value;
+        }
+
+        if (hours <= 0) return;
+
+        // Удаляем прошлую запись этого типа за день
+        const filteredSleep = state.sleepLogs.filter(s => !(s.date === state.date && (s.type === type || (type === 'night' && !s.type))));
+
+        const sleepEntry = {
+            id: Math.random().toString(36).substr(2, 9),
+            date: state.date,
+            hours,
+            rating,
+            type
+        };
+
+        updateState('sleepLogs', [...filteredSleep, sleepEntry]);
+    };
+
+    // Сброс и удаление конкретного сна
+    window._deleteSleep = (id) => {
+        updateState('sleepLogs', state.sleepLogs.filter(s => s.id !== id));
+    };
+
+    // Обработчик добавления веса из специализированной вкладки
+    window._addWeightFromTab = (event) => {
+        event.preventDefault();
+        const date = document.getElementById('weight-tab-date').value;
+        const weightVal = parseFloat(document.getElementById('weight-tab-value').value) || 0;
+        if (weightVal > 0 && date) {
+            const filtered = state.weightLogs.filter(w => w.date !== date);
+            updateState('weightLogs', [...filtered, { date, weight: weightVal }]);
+            // Синхронизация с полем в шапке, если дата совпадает
+            if (date === state.date) {
+                const el = document.getElementById('app-weight-select');
+                if (el) el.value = weightVal;
+            }
+        }
+    };
+
+    // Обработчик удаления записи взвешивания
+    window._deleteWeight = (date) => {
+        const filtered = state.weightLogs.filter(w => w.date !== date);
+        updateState('weightLogs', filtered);
+    };
+
+    // Изменение дневной нормы (цели) макросов вручную
+    window._updateGoal = (key, value) => {
+        const val = parseFloat(value) || 0;
+        updateState('goals', {
+            ...state.goals,
+            [key]: val
+        });
+    };
+
+    // Простая заглушка/функция рендеринга графика веса (если она не была объявлена ранее)
+    if (typeof window.renderWeightChart !== 'function') {
+        window.renderWeightChart = () => {
+            console.log("Рендеринг графика веса...");
+            // Здесь может быть твоя логика отрисовки Canvas графика веса
+        };
+    }
+
+    // Обработка автоматического масштабирования графика при изменении размеров экрана
+    window.addEventListener('resize', () => {
+        if (typeof renderChart === 'function') renderChart();
+        if (state.activeTab === 'weight') {
+            renderWeightChart();
+        }
+    });
+
+    // Функция обновления состояния приложения
+    window.updateState = (key, newValue) => {
+        state[key] = newValue;
+        
+        // Синхронизация с Firebase (сохраняем всё состояние)
+        if (window.database) {
+            database.ref('users/user_1/state').set(state)
+                .catch(err => console.error("Ошибка сохранения в Firebase:", err));
+        } else {
+            // Резервное копирование в LocalStorage на случай, если Firebase не подключен
+            localStorage.setItem('myAppData', JSON.stringify(state));
+        }
+        
+        renderApp();
+    };
+
+    // Первичный запуск и синхронизация
+    const currentWeight = getCurrentWeightForDate(state.date);
+    const currentActivity = getCurrentActivityForDate(state.date);
+
+    if (state.autoCalculate) {
+        state.goals = calculateKBJU(currentWeight, currentActivity);
+    }
+    </script>
+
+<!-- Подключаем Firebase (Compat-версии для работы без сборщиков через CDN) -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+<script>
+    // Вставь сюда свои уникальные данные из консоли Firebase (Проект -> Параметры проекта)
+    const firebaseConfig = {
+    apiKey: "AIzaSyCyHCKMHPGc7GNUa_p4Y0XQ70Kt5RnqM8g",
+    authDomain: "sheeesshes-26faa.firebaseapp.com",
+    databaseURL: "https://sheeesshes-26faa-default-rtdb.firebaseio.com",
+    projectId: "sheeesshes-26faa",
+    storageBucket: "sheeesshes-26faa.firebasestorage.app",
+    messagingSenderId: "1073526261176",
+    appId: "1:1073526261176:web:de6d9c563b4852c9d53b4d",
+    measurementId: "G-8L8VPBEWHT"
+    };
+
+    // Инициализируем Firebase
+    firebase.initializeApp(firebaseConfig);
+    window.database = firebase.database();
+
+    // Функция загрузки данных из Firebase при запуске
+    function loadDataFromFirebase() {
+        database.ref('users/user_1/state').once('value')
+            .then((snapshot) => {
+                const cloudData = snapshot.val();
+                if (cloudData) {
+                    // Переписываем локальный state данными из облака
+                    window.state = cloudData;
+                    console.log("Данные успешно синхронизированы из Firebase!");
+                } else {
+                    console.log("Облако пустое. Будут использованы локальные дефолтные данные.");
+                }
+                // Запускаем отрисовку приложения после того, как данные точно загрузились
+                renderApp();
+            })
+            .catch((error) => {
+                console.error("Ошибка чтения из Firebase, загружаем локально:", error);
+                // Если база недоступна — рендерим то, что есть локально
+                renderApp();
+            });
+    }
+
+    // Запускаем процесс загрузки данных
+    loadDataFromFirebase();
+</script>
+</body>
+</html>
