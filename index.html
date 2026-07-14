@@ -579,7 +579,12 @@
             state.goals = calculated;
             localStorage.setItem('macro_tracker_goals_v3', JSON.stringify(calculated));
         }
-
+        if (window.database) {
+        database.ref("users/user_1/state")
+        .set(state)
+        .then(() => console.log("УСПЕШНО СОХРАНЕНО В FIREBASE"))
+        .catch(err => console.error("ОШИБКА FIREBASE:", err));
+}
         // Вызов отрисовки интерфейса
         renderApp();
     };
@@ -1502,7 +1507,10 @@
 
     // Функция загрузки данных из Firebase при запуске
     function loadDataFromFirebase() {
-        database.ref('users/user_1/state').once('value')
+        database.ref('users/user_1/state')
+        .set(state)
+        .then(() => console.log("УСПЕШНО СОХРАНЕНО"))
+        .catch(err => console.error("ОШИБКА СОХРАНЕНИЯ", err))
             .then((snapshot) => {
                 const cloudData = snapshot.val();
                 if (cloudData) {
